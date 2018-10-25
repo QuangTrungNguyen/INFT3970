@@ -1,0 +1,179 @@
+
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+  shape-rendering: crispEdges;
+}
+
+.day {
+  fill: #fff;
+  stroke: #ccc;
+}
+
+.month {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2px;
+}
+
+.info
+{
+  font-size: 1.5em;
+}
+
+.RdYlGn .q0-11{fill:rgb(165,0,38)}
+.RdYlGn .q1-11{fill:rgb(215,48,39)}
+.RdYlGn .q2-11{fill:rgb(244,109,67)}
+.RdYlGn .q3-11{fill:rgb(253,174,97)}
+.RdYlGn .q4-11{fill:rgb(254,224,139)}
+.RdYlGn .q5-11{fill:rgb(255,255,191)}
+.RdYlGn .q6-11{fill:rgb(217,239,139)}
+.RdYlGn .q7-11{fill:rgb(166,217,106)}
+.RdYlGn .q8-11{fill:rgb(102,189,99)}
+.RdYlGn .q9-11{fill:rgb(26,152,80)}
+.RdYlGn .q10-11{fill:rgb(0,104,55)}
+
+</style>
+<body>
+
+<!-- <script src="d3.v3.min.js"></script>-->
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+// Default diagram size
+var width = 960,
+    height = 146,
+    cellSize = 17; // cell size
+
+// Define the formate of date
+var format = d3.time.format("%Y-%m-%d"),
+    month_name = d3.time.format("%B");
+
+var data = {"2016-08-10": 5, "2016-08-11": 3, "2016-08-12": 1, "2016-08-03": 2, "2016-10-31": 5, "2016-10-23": 8, "2016-10-24": 24, "2016-10-25": 24, "2016-10-26": 12, "2016-09-05": 13, "2016-09-06": 24, "2016-09-07": 11}
+
+// Define the color
+var color = d3.scale.quantize()
+    .domain([0, 24])
+    .range(d3.range(11).map(function(d) { return "q" + d + "-11"; }));
+
+// Generate svg
+var svg = d3.select("body").selectAll("svg")
+    .data(d3.range(2016, 2017))
+    .enter().append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("class", "RdYlGn")
+    .append("g")
+    .attr("transform", "translate(" + ((width - cellSize * 53) / 2 + 11) + "," + (height - cellSize * 7 - 1) + ")");
+
+// Generate text of year
+svg.append("text")
+    .attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
+    .style("text-anchor", "middle")
+    .text(function(d) { return d; });
+
+// Generate rectangles
+var rect = svg.selectAll(".day")
+    .data(function(d) { return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+    .enter().append("rect")
+    .attr("class", "day")
+    .attr("width", cellSize)
+    .attr("height", cellSize)
+    .attr("x", function(d) { return d3.time.weekOfYear(d) * cellSize; })
+    .attr("y", function(d) { return d.getDay() * cellSize; })
+    .datum(format);
+
+rect.append("title")
+    .text(function(d) { return d; });
+
+// Generate month boundary
+svg.selectAll(".month")
+   .data(function(d) { return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+   .enter().append("path")
+   .attr("class", "month")
+   .attr("d", monthPath);
+
+// Generate text of month
+svg.selectAll("text.month")
+   .data(function(d) { return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+   .enter().append("text")
+   .attr("class", "month")
+   .attr("x", function(d) {
+     return d3.time.weekOfYear(d) * cellSize + cellSize; 
+   })
+   .attr("y", -10)
+   .style("stroke-width", "0px")
+   .style("fill", "#000")
+   .text(month_name);
+
+// Define the color of rectangles
+rect.filter(function(d) { return d in data; })
+    .attr("class", function(d) { return "day " + color(data[d]); })
+    .select("title")
+    .text(function(d) { return d + ": " + data[d]; });
+
+// Define month path
+// Used for month boundary defination and get no. of rectangles for each month
+function monthPath(t0) {
+  var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
+      d0 = t0.getDay(), w0 = d3.time.weekOfYear(t0),
+      d1 = t1.getDay(), w1 = d3.time.weekOfYear(t1);
+  return "M" + (w0 + 1) * cellSize + "," + d0 * cellSize
+      + "H" + w0 * cellSize + "V" + 7 * cellSize
+      + "H" + w1 * cellSize + "V" + (d1 + 1) * cellSize
+      + "H" + (w1 + 1) * cellSize + "V" + 0
+      + "H" + (w0 + 1) * cellSize + "Z";
+}
+
+var date = Object.keys(data);
+var value = Object.keys(data).map(function(key){return data[key];});
+
+var minValue = value[0];
+var minDate;
+var maxValue = 0;
+var maxDate;
+
+// Find the minimun value and date
+for (var i = 0; i < Object.keys(data).length; i ++)
+{
+    if (value[i] < minValue)
+    {
+        minValue = value[i];
+        minDate = date[i];
+    }
+}
+
+// Find the maximum value and date
+for (var i = 0; i < Object.keys(data).length; i ++)
+{
+  if (value[i] > maxValue)
+  {
+      maxValue = value[i];
+      maxDate = date[i];
+  }
+}
+
+// Display the maximum value, minimum value and it's date
+var min = "Minimum value: " + minValue + ", On: " + minDate;
+var max = "Maximum value: " + maxValue + ", On: " + maxDate;
+
+d3.select("body").append("p");
+d3.select("body").append("div")
+  .attr("id","min")
+  .attr("class","info")
+  .text(min);
+
+
+  
+d3.select("body").append("div")
+  .attr("id","max")
+  .attr("class","info")
+  .text(max);
+
+</script>
+
